@@ -202,7 +202,7 @@ mod style_names {
 pub const DEFAULT_CONFIG_DIR: &str = "/etc/anyrun";
 
 fn main() {
-    let app = gtk::Application::new(Some("com.kirottu.anyrun"), Default::default());
+    let app = gtk::Application::new(Some("com.jimit.anyrun"), Default::default());
 
     // Register here so we know if the instance is the primary or a remote
     app.register(None::<&gio::Cancellable>).unwrap();
@@ -228,7 +228,7 @@ fn main() {
     });
 
     // Load config, if unable to then read default config. If an error occurs the message will be displayed.
-    let (mut config, error_label) = match fs::read_to_string(format!("{}/config.ron", config_dir)) {
+    let (mut config, error_label) = match fs::read_to_string(format!("{config_dir}/config.ron")) {
         Ok(content) => ron::from_str(&content)
             .map(|config| (config, String::new()))
             .unwrap_or_else(|why| {
@@ -479,12 +479,12 @@ fn activate(app: &gtk::Application, runtime_data: Rc<RefCell<RuntimeData>>) {
         use gdk::keys::constants;
         match event.keyval() {
             // Close window on escape
-            constants::Escape => {
+            constants::Escape | constants::Super_L => {
                 window.close();
                 Inhibit(true)
             }
             // Handle selections
-            constants::Down | constants::Tab | constants::Up => {
+            constant @ (constants::Down | constants::Tab | constants::Up) => {
                 // Combine all of the matches into a `Vec` to allow for easier handling of the selection
                 let combined_matches = runtime_data_clone
                     .borrow()
@@ -510,7 +510,7 @@ fn activate(app: &gtk::Application, runtime_data: Rc<RefCell<RuntimeData>>) {
                         None => {
                             // If nothing is selected select either the top or bottom match based on the input
                             if !combined_matches.is_empty() {
-                                match event.keyval() {
+                                match constant {
                                     constants::Down | constants::Tab => combined_matches[0]
                                         .1
                                         .select_row(Some(&combined_matches[0].0)),
